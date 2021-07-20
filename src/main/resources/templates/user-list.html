@@ -1,0 +1,217 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>用户列表</title>
+    <meta name="author" content="pan_junbiao的博客">
+    <link rel="stylesheet" href="/css/base.css">
+
+    <!-- DataTables CSS -->
+    <link rel="stylesheet" type="text/css" href="/DataTables-1.10.21/css/jquery.dataTables.css">
+
+    <!-- jQuery -->
+    <script type="text/javascript" charset="utf8" src="/DataTables-1.10.21/js/jquery.js"></script>
+
+    <!-- DataTables -->
+    <script type="text/javascript" charset="utf8" src="/DataTables-1.10.21/js/jquery.dataTables.js"></script>
+
+</head>
+<body>
+    <!--搜索框-->
+    <form class="searchBox">
+        用户名称：<input class="s_text" id="userName"/>
+        性别：
+        <select class="s_select" id="sex">
+            <option value="0">请选择</option>
+            <option value="1">男</option>
+            <option value="2">女</option>
+        </select>
+        部门：
+        <select class="s_select" id="departmentName">
+            <option value="">请选择</option>
+            <option value="研发部">研发部</option>
+            <option value="财务部">财务部</option>
+            <option value="人事部">人事部</option>
+        </select>
+        <input class="b_button" type="button" value="搜索" onclick="searchList()"/>
+        <input class="b_button" type="reset" value="重置" />
+        <input class="b_button" type="button" value="批量删除" onclick="batchDelete()" />
+    </form>
+
+    <!-- 数据表格 -->
+    <table id="table" class="cell-border" ></table>
+</body>
+<script>
+    $(document).ready(function()
+    {
+        //DataTable对象
+        var tableModel = $("#table").DataTable({
+            "processing": true, //显示“处理中...”
+            "serverSide": true, //开启服务器模式
+            "paging": true, //是否允许翻页
+            "ajax": {
+                "url": "/user/searchUserPage",
+                "type": "GET",
+                "data": function (searchParams) {
+                    searchParams.userName = $("#userName").val();
+                    searchParams.sex = $("#sex").val();
+                    searchParams.departmentName = $("#departmentName").val();
+                    searchParams.orderBy = "user_id ASC";
+                    return searchParams;
+                }
+            },
+            "columns": [
+                {
+                    "data": "userId", "title":"<input type='checkbox' id='checkAll' />全选",
+                    "render": function (data, type, row, meta)
+                    {
+                        return "<input type='checkbox' name='checkItem' value=" + data + " />";
+                    }
+                },
+                {
+                    "title":"序号",
+                    "render" : function (data, type, row, meta)
+                    {
+                        return meta.row + 1 + meta.settings._iDisplayStart;
+                    }
+                },
+                { "data": "userName","title":"用户名称" },
+                {
+                    "data": "sex","title":"性别",
+                    "render" : function ( data, type, row, meta ) {
+                        var conent = data == 1 ? "男" : "女";
+                        return conent;
+                    }
+                },
+                { "data": "departmentName","title":"部门名称" },
+                { "data": "blogRemark","title":"博客信息" },
+                {
+                    "title":"操作",
+                    "render" : function ( data, type, row, meta )
+                    {
+                        var conent = "<a href='javascript:updateData(" + row.userId + ")'>编辑</a>\n";
+                        conent += "<a href='javascript:deleteData(" + row.userId + ")'>删除</a>";
+                        return conent;
+                    }
+                }
+            ],
+            "rowId": "userId", //指定用于行ID的属性名 默认是：DT_RowId
+            "lengthMenu": [5, 10, 25, 50, 75, 100], // 数量选择下拉框内容
+            "pageLength": 5, // 每页的初期件数
+            "searching" : false, //是否显示搜索框
+            "bSort": false,  //禁止排序
+            "language": {
+                "sProcessing": "处理中...",
+                "sLengthMenu": "显示 _MENU_ 项结果",
+                "sZeroRecords": "没有匹配结果",
+                "sInfo": "显示第 _START_ 至 _END_ 项结果，共 _TOTAL_ 项",
+                "sInfoEmpty": "显示第 0 至 0 项结果，共 0 项",
+                "sInfoFiltered": "(由 _MAX_ 项结果过滤)",
+                "sInfoPostFix": "",
+                "sSearch": "搜索:",
+                "sUrl": "",
+                "sEmptyTable": "表中数据为空",
+                "sLoadingRecords": "载入中...",
+                "sInfoThousands": ",",
+                "oPaginate": {
+                    "sFirst": "首页",
+                    "sPrevious": "上页",
+                    "sNext": "下页",
+                    "sLast": "末页"
+                },
+                "oAria": {
+                    "sSortAscending": ": 以升序排列此列",
+                    "sSortDescending": ": 以降序排列此列"
+                }
+            }
+        });
+
+        // init：初始化和数据都加载完成，和 initComplete配置等价
+        tableModel.on("draw", function ()
+        {
+            //全选
+            $("#checkAll").click(function(){
+                $("[name=checkItem]:checkbox").prop("checked",this.checked);
+            });
+
+            //复选框组的联动效果
+            $("[name=checkItem]:checkbox").click(function(){
+                var flag = true;
+                $("[name=checkItem]:checkbox").each(function(index){
+                    if(!this.checked)
+                    {
+                        flag = false;
+                    }
+                });
+                $("#checkAll").prop("checked",flag);
+            });
+        });
+    });
+
+    //查询列表
+    function searchList()
+    {
+        //重新加载DataTable列表
+        $("#table").DataTable().ajax.reload();
+    }
+
+    //编辑用户
+    function updateData(userId)
+    {
+        if (userId <= 0) {
+            alert("参数错误！");
+            return;
+        }
+
+        //执行您的编辑操作
+        alert("编辑用户的编号：" + userId);
+
+        //编辑操作完成后，重新加载DataTable列表
+        $("#table").DataTable().ajax.reload();
+    }
+
+    //删除用户
+    function deleteData(userId)
+    {
+        if (!confirm("确定删除该记录吗？")) {
+            return;
+        }
+
+        if (userId <= 0) {
+            alert("参数错误！");
+            return;
+        }
+
+        //执行您的删除操作
+        alert("删除用户的编号：" + userId);
+
+        //删除操作完成后，重新加载DataTable列表
+        $("#table").DataTable().ajax.reload();
+    }
+
+    //批量删除
+    function batchDelete()
+    {
+        var idArray = new Array(); //批量删除的用户ID数组
+        $("[name=checkItem]:checkbox:checked").each(function(index){
+            idArray.push($(this).val());
+        });
+
+        if(idArray.length==0)
+        {
+            alert("请选择要删除的员工！");
+            return;
+        }
+
+        if (!confirm("确定删除记录吗？")) {
+            return;
+        }
+
+        //执行您的删除操作
+        alert("删除用户的编号：" + idArray);
+
+        //删除操作完成后，重新加载DataTable列表
+        $("#table").DataTable().ajax.reload();
+    }
+</script>
+</html>
